@@ -48,7 +48,7 @@ def render_checkin_tab(engine):
     </div>
     """, unsafe_allow_html=True)
 
-    # If already completed today, show Summary (Green border removed)
+    # If already completed today, show Summary
     if st.session_state.get("checkin_completed") and not st.session_state.get("editing_checkin", False):
         last_eval = st.session_state.get("latest_evaluation", {})
         last_inputs = st.session_state.get("latest_inputs", {})
@@ -110,7 +110,7 @@ def render_checkin_tab(engine):
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # 3. HOW ARE YOU FEELING BODILY? (Your Tap Chips)
+    # 3. HOW ARE YOU FEELING BODILY?
     # ----------------------------------------------------
     st.markdown("<div class='warm-card'>", unsafe_allow_html=True)
     st.markdown("""
@@ -124,7 +124,6 @@ def render_checkin_tab(engine):
     <div style="height:12px;"></div>
     """, unsafe_allow_html=True)
 
-    # A. Head & Vision
     st.markdown("<span style='font-size:0.82rem; font-weight:700; color:#5A4744;'>Head & Clarity</span>", unsafe_allow_html=True)
     hc1, hc2, hc3, hc4 = st.columns(4)
     with hc1:
@@ -145,7 +144,6 @@ def render_checkin_tab(engine):
             st.session_state.symptom_vision = "Clear & Normal" if has_aura else "Sparkles / Blur"
             st.rerun()
 
-    # B. Fluid & Tummy
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
     st.markdown("<span style='font-size:0.82rem; font-weight:700; color:#5A4744;'>Swelling & Digestion</span>", unsafe_allow_html=True)
     fc1, fc2, fc3 = st.columns(3)
@@ -170,7 +168,7 @@ def render_checkin_tab(engine):
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ----------------------------------------------------
-    # 4. TODAY’S DAILY COMFORT (Your Tiles)
+    # 4. TODAY’S DAILY COMFORT
     # ----------------------------------------------------
     st.markdown("<div class='warm-card'>", unsafe_allow_html=True)
     st.markdown("""
@@ -179,7 +177,6 @@ def render_checkin_tab(engine):
     <div style="height:12px;"></div>
     """, unsafe_allow_html=True)
 
-    # Sleep Tiles
     st.markdown("<span style='font-size:0.82rem; font-weight:700; color:#5A4744;'>Sleep Sanctuary</span>", unsafe_allow_html=True)
     sl1, sl2, sl3 = st.columns(3)
     with sl1:
@@ -195,7 +192,6 @@ def render_checkin_tab(engine):
             st.session_state.comfort_sleep = "Deep & Dreamy 🌙"
             st.rerun()
 
-    # Energy Tiles
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
     st.markdown("<span style='font-size:0.82rem; font-weight:700; color:#5A4744;'>Energy Battery</span>", unsafe_allow_html=True)
     eg1, eg2, eg3 = st.columns(3)
@@ -257,6 +253,7 @@ def render_checkin_tab(engine):
 
         record = {
             **user_inputs,
+            "date": datetime.date.today().strftime("%Y-%m-%d"),
             "risk_tier": eval_result["risk_tier"],
             "risk_percentage": int(eval_result["probability"] * 100),
             "water_glasses": st.session_state.get("water_count", 5),
@@ -306,7 +303,6 @@ def render_assessment_results(eval_result, user_inputs):
         "No concerning hemodynamic patterns were identified in the information provided today."
     )
 
-    # Clean Soft Card (Green border removed)
     assessment_html = f"""
     <div class="warm-card" style="border:1px solid #F2E3DE; margin-top:18px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -336,7 +332,7 @@ def render_assessment_results(eval_result, user_inputs):
     """
     st.markdown(assessment_html, unsafe_allow_html=True)
 
-    # SHAP Explainability Card (Wrapped together cleanly to prevent overlap)
+    # SHAP Explainability Card (Clean, Simple, No Empty Boxes)
     st.markdown(f"""
     <div class="warm-card" style="margin-top:16px;">
         <div style="font-size:1rem; font-weight:700; color:#3D2B28;">
@@ -362,18 +358,6 @@ def render_assessment_results(eval_result, user_inputs):
             </span>
         </div>
         """, unsafe_allow_html=True)
-
-    with st.expander("Technical Details"):
-        st.caption("Feature values passed into XGBoost and corresponding TreeSHAP coefficients:")
-        shap_table = [
-            {
-                "Feature": item["label"],
-                "Recorded Value": round(item["actual_value"], 2),
-                "SHAP Contribution": round(item["shap_value"], 4)
-            }
-            for item in eval_result.get("all_shap_details", [])
-        ]
-        st.dataframe(shap_table, hide_index=True, use_container_width=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 

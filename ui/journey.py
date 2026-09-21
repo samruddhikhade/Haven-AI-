@@ -4,6 +4,7 @@ import json
 import uuid
 import datetime
 import streamlit as st
+from core.storage import get_recent_checkins
 
 JOURNEY_FILE = os.path.join("data", "my_journey.json")
 
@@ -88,8 +89,19 @@ def render_journey_tab():
     moments = data.get("moments", [])
     milestones = data.get("milestones", [])
 
-    # Unique dates
-    all_dates = set([n["date"] for n in notes] + [m["date"] for m in moments] + [ms["date"] for ms in milestones])
+    # Fetch Real Check-ins from SQLite
+    history_df = get_recent_checkins(limit=30)
+    checkins_list = []
+    if not history_df.empty:
+        checkins_list = history_df.to_dict(orient="records")
+
+    # Combine all dates including Check-ins
+    all_dates = set(
+        [n["date"] for n in notes] + 
+        [m["date"] for m in moments] + 
+        [ms["date"] for ms in milestones] +
+        [str(c.get("date", "")) for c in checkins_list if c.get("date")]
+    )
 
     # --- 1. HEADER ---
     st.markdown("""
@@ -105,7 +117,7 @@ def render_journey_tab():
     with c1:
         st.markdown(f'<div class="stat-box"><div class="stat-val">🌸 {len(all_dates)}</div><div class="stat-sub">Days Logged</div></div>', unsafe_allow_html=True)
     with c2:
-        st.markdown(f'<div class="stat-box"><div class="stat-val">📝 {len(notes)}</div><div class="stat-sub">Little Notes</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="stat-box"><div class="stat-val">🩺 {len(checkins_list)}</div><div class="stat-sub">Check-ins</div></div>', unsafe_allow_html=True)
     with c3:
         st.markdown(f'<div class="stat-box"><div class="stat-val">✨ {len(moments)}</div><div class="stat-sub">Little Moments</div></div>', unsafe_allow_html=True)
     with c4:
@@ -205,13 +217,13 @@ def render_journey_tab():
         st.write("")
         
         # Empty State
-        if not notes and not moments and not milestones:
+        if not notes and not moments and not milestones and not checkins_list:
             st.markdown("""
             <div style="text-align:center; padding: 36px 18px; background: #FAF7F4; border-radius: 18px; border: 1px dashed #DFD2C7; margin-top: 10px;">
                 <span style="font-size: 2.2rem;">🌷</span>
                 <h3 style="color:#4A3F39; margin: 8px 0 4px 0;">Your journey starts here.</h3>
                 <p style="color:#8A7B73; font-size: 0.86rem; max-width: 420px; margin: 0 auto 16px auto;">
-                    Write a little note or save your first moment above to see your story unfold.
+                    Write a little note, check in your vitals, or save your first moment above to see your story unfold.
                 </p>
             </div>
             """, unsafe_allow_html=True)
@@ -228,10 +240,34 @@ def render_journey_tab():
             day_notes = [n for n in notes if n["date"] == day_str]
             day_moments = [m for m in moments if m["date"] == day_str]
             day_milestones = [ms for ms in milestones if ms["date"] == day_str]
+            day_checkins = [c for c in checkins_list if str(c.get("date")) == day_str]
 
             st.markdown(f"#### 🌷 {day_display}")
 
-            # Show Milestones
+            # 1. Show Check-in Card if exists for this day
+            for chk in day_checkins:
+                sbp = int(chk.get("systolic_bp", 120))
+                dbp = int(chk.get("diastolic_bp", 80))
+                hr = int(chk.get("heart_rate", 76))
+                tier = chk.get("risk_tier", "Lower-Risk Pattern")
+                water = chk.get("water_glasses", 5)
+
+                st.markdown(f"""
+                <div class="entry-card" style="border-left: 4px solid #C86D61; background: #FFFDFB;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="tag-pill" style="color:#C86D61; background:#FCECE8; border-color:#F5D7D0;">🩺 Haven Daily Check-in</span>
+                        <span style="font-size:0.75rem; font-weight:700; color:#5D8C72;">{tier}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; font-size:0.84rem; color:#42342E;">
+                        <div>🩺 <b>BP:</b> {sbp}/{dbp} mmHg</div>
+                        <div>❤️ <b>Pulse:</b> {hr} bpm</div>
+                        <div>💧 <b>Water:</b> {water} Glasses</div>
+                        <div>🌿 <b>Vitals Check:</b> Complete ✓</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # 2. Show Milestones
             for ms in day_milestones:
                 with st.container():
                     st.markdown(f"""
@@ -246,7 +282,7 @@ def render_journey_tab():
                         _save_journey_data(data)
                         st.rerun()
 
-            # Show Little Moments
+            # 3. Show Little Moments
             for m in day_moments:
                 with st.container():
                     st.markdown(f"""
@@ -261,7 +297,7 @@ def render_journey_tab():
                         _save_journey_data(data)
                         st.rerun()
 
-            # Show Notes
+            # 4. Show Notes
             for n in day_notes:
                 with st.container():
                     st.markdown(f"""
