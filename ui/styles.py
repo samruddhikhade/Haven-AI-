@@ -4,95 +4,106 @@ import streamlit as st
 def apply_haven_theme():
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-    * {
+    /* Apply custom font ONLY to text, NOT to Streamlit icons */
+    html, body, p, h1, h2, h3, h4, h5, h6, label, input, button, .stMarkdown {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
-    /* Force Light Theme Colors across Mobile & Dark Mode Devices */
-    html, body, [data-testid="stAppViewContainer"], .stApp {
-        background: #FDF9F7 !important;
-        color: #3D2B28 !important;
+    /* Preserve Streamlit icon fonts so they don't break into text like '_arrow_right' */
+    [data-testid="stIconMaterial"], 
+    .material-symbols-rounded, 
+    .material-icons,
+    [data-testid="stExpander"] svg,
+    [data-testid="stExpanderToggleIcon"] {
+        font-family: 'Material Symbols Rounded', 'Material Icons' !important;
     }
 
-    /* Remove Default Streamlit Headers */
+    .stApp {
+        background-color: #FDF9F7;
+        color: #4A3B39;
+    }
+
     #MainMenu, header, footer {visibility: hidden;}
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
-        max-width: 680px !important;
+        max-width: 740px !important;
     }
 
-    /* Ensure All Form Labels & Number Inputs Are Visible and Readable */
-    label, p, span, div {
-        color: #3D2B28 !important;
+    .haven-brand-title {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 2.2rem;
+        font-weight: 600;
+        color: #3B2B28;
+        letter-spacing: -0.5px;
+        line-height: 1.1;
     }
 
-    div[data-baseweb="input"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #EADCD6 !important;
-        border-radius: 12px !important;
-    }
-
-    div[data-baseweb="input"] input {
-        color: #3D2B28 !important;
-        -webkit-text-fill-color: #3D2B28 !important;
-        font-weight: 600 !important;
-    }
-
-    /* Replace the Big Oval With Modern Individual Floating Pills */
+    /* Soft Pastel Navigation Pills */
     div[data-testid="stRadio"] > div {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
+        background: #F5EAE6 !important;
+        border-radius: 9999px !important;
+        padding: 5px !important;
         display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-        justify-content: center !important;
-        margin: 12px 0 18px 0 !important;
-        padding: 0 !important;
+        justify-content: space-around !important;
+        border: 1px solid #EBDAD4 !important;
+        margin: 16px 0 20px 0 !important;
     }
-
-    /* Hide ugly black radio circles */
-    div[data-testid="stRadio"] label > div:first-child {
-        display: none !important;
-    }
-
-    /* Individual Abstract Floating Tabs */
     div[data-testid="stRadio"] label {
-        background: #FFFFFF !important;
-        border: 1px solid #F0DFD8 !important;
-        border-radius: 16px !important;
-        padding: 8px 14px !important;
-        font-size: 0.84rem !important;
+        border-radius: 9999px !important;
+        padding: 6px 14px !important;
+        color: #7D6B67 !important;
+        font-size: 0.82rem !important;
         font-weight: 600 !important;
-        box-shadow: 0 2px 8px rgba(74, 59, 57, 0.04) !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease-in-out !important;
+        background: transparent !important;
+        transition: all 0.2s ease !important;
     }
-
-    /* Active Tab Glow */
     div[data-testid="stRadio"] label[data-checked="true"] {
-        background: #FBECE8 !important;
-        border: 1px solid #E6A89F !important;
-        box-shadow: 0 4px 12px rgba(211, 109, 97, 0.18) !important;
-        transform: translateY(-2px);
-    }
-    div[data-testid="stRadio"] label[data-checked="true"] span {
-        color: #B8584B !important;
-        font-weight: 700 !important;
+        background: #FFFFFF !important;
+        color: #C86D61 !important;
+        box-shadow: 0 2px 8px rgba(200, 109, 97, 0.12) !important;
     }
 
-    /* Soft General Buttons */
+    /* Soft Warm Card - No Harsh Lines */
+    .warm-card {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid #F5E7E2;
+        box-shadow: 0 4px 18px rgba(74, 59, 57, 0.03);
+        margin-bottom: 16px;
+    }
+
+    /* Buttons */
     .stButton > button {
         background: #FCECE8 !important;
         color: #B8584B !important;
         font-weight: 600 !important;
         border-radius: 9999px !important;
         border: 1px solid #F5D7D0 !important;
-        padding: 8px 18px !important;
+        padding: 6px 18px !important;
         font-size: 0.84rem !important;
+        transition: all 0.2s ease !important;
+        box-shadow: none !important;
+    }
+    .stButton > button:hover {
+        background: #F7DDD6 !important;
+        color: #9E4539 !important;
+        border-color: #EBC3B9 !important;
+        transform: translateY(-1px);
+    }
+
+    .primary-pill .stButton > button {
+        background: linear-gradient(135deg, #E89588 0%, #D87B6D 100%) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        box-shadow: 0 3px 12px rgba(216, 123, 109, 0.25) !important;
+    }
+    .primary-pill .stButton > button:hover {
+        background: linear-gradient(135deg, #DF8678 0%, #CB6B5D 100%) !important;
+        color: #FFFFFF !important;
     }
     </style>
     """, unsafe_allow_html=True)
