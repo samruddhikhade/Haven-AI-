@@ -6,12 +6,12 @@ def apply_haven_theme():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-    /* Apply custom font ONLY to text, NOT to Streamlit icons */
+    /* Text elements par font apply karein, icon fonts par nahi */
     html, body, p, h1, h2, h3, h4, h5, h6, label, input, button, .stMarkdown {
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
-    /* Preserve Streamlit icon fonts so they don't break into text like '_arrow_right' */
+    /* Streamlit icons ko text banne se bachayein */
     [data-testid="stIconMaterial"], 
     .material-symbols-rounded, 
     .material-icons,
