@@ -8,6 +8,7 @@ DB_PATH = "haven_storage.db"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+    # Checkins Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS checkins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,6 +33,17 @@ def init_db():
             journal_note TEXT
         )
     """)
+    
+    # Cravings Table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cravings_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT,
+            craving_category TEXT,
+            recipe_name TEXT,
+            mood TEXT
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -41,13 +53,7 @@ def get_recent_checkins(limit: int = 7):
     try:
         df = pd.read_sql_query(f"SELECT * FROM checkins ORDER BY id DESC LIMIT {int(limit)}", conn)
     except Exception:
-        df = pd.DataFrame(columns=[
-            "id", "date", "age", "systolic_bp", "diastolic_bp", "weight", 
-            "heart_rate", "blood_sugar", "has_headache", "has_vision", 
-            "has_edema", "symptoms_count", "current_map", "delta_map", 
-            "delta_weight", "risk_tier", "risk_percentage", "mood", 
-            "water_glasses", "journal_note"
-        ])
+        df = pd.DataFrame()
     finally:
         conn.close()
     return df
@@ -87,3 +93,42 @@ def save_checkin(record: dict):
     ))
     conn.commit()
     conn.close()
+
+def save_craving_log(category: str, recipe_name: str, mood: str = "Cozy"):
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    cur.execute("""
+        INSERT INTO cravings_log (date, craving_category, recipe_name, mood)
+        VALUES (?, ?, ?, ?)
+    """, (today_str, category, recipe_name, mood))
+    conn.commit()
+    conn.close()
+
+def get_todays_craving():
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    try:
+        df = pd.read_sql_query("SELECT * FROM cravings_log WHERE date = ? ORDER BY id DESC LIMIT 1", conn, params=(today_str,))
+        if not df.empty:
+            res = df.iloc[0].to_dict()
+        else:
+            res = None
+    except Exception:
+        res = None
+    finally:
+        conn.close()
+    return res
+
+def get_craving_history(limit: int = 10):
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        df = pd.read_sql_query(f"SELECT * FROM cravings_log ORDER BY id DESC LIMIT {int(limit)}", conn)
+    except Exception:
+        df = pd.DataFrame()
+    finally:
+        conn.close()
+    return df
