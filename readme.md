@@ -8,7 +8,7 @@
 
 > **Haven** bridges daily maternal wellness tracking with clinical predictive intelligence. It pairs real-time, explainable pre-eclampsia risk detection powered by machine learning with gentle, low-stress pregnancy companionship.
 
-🔗 **Live Application:** [havenai-04.streamlit.app](https://haven-ai-04.streamlit.app)
+ 🔗 **Live Demo:** [Haven Web App](https://haven-ai-04.streamlit.app)
 
 ---
 
