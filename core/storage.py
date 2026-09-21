@@ -9,7 +9,8 @@ DB_PATH = "haven_storage.db"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    # Checkins Table
+    
+    # 1. Checkins Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS checkins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +35,8 @@ def init_db():
             journal_note TEXT
         )
     """)
-    # Full Craving Entries Table
+
+    # 2. Cravings Entries Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS cravings_entries (
             id TEXT PRIMARY KEY,
@@ -48,16 +50,33 @@ def init_db():
             note TEXT
         )
     """)
-    # Pantry Settings Table
+
+    # 3. User Settings Table (Pantry etc.)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_settings (
             key TEXT PRIMARY KEY,
             value TEXT
         )
     """)
+
+    # 4. Sanctuary Sessions Table (Meditation, Breathing, Calm logs)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS sanctuary_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT,
+            time TEXT,
+            session_type TEXT,
+            duration_minutes INTEGER,
+            notes TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
 
+# ----------------------------------------------------
+# CHECK-IN FUNCTIONS
+# ----------------------------------------------------
 def get_recent_checkins(limit: int = 7):
     init_db()
     conn = sqlite3.connect(DB_PATH)
@@ -104,8 +123,9 @@ def save_checkin(record: dict):
     conn.commit()
     conn.close()
 
-# --- Functions required by your ui/cravings.py ---
-
+# ----------------------------------------------------
+# CRAVING FUNCTIONS
+# ----------------------------------------------------
 def save_craving_entry(entry: dict):
     init_db()
     conn = sqlite3.connect(DB_PATH)
@@ -169,3 +189,29 @@ def get_saved_pantry():
     finally:
         conn.close()
     return ["Banana", "Makhana", "Curd", "Oats", "Dark Chocolate", "Milk"]
+
+# ----------------------------------------------------
+# SANCTUARY FUNCTIONS (Jo abhi missing the!)
+# ----------------------------------------------------
+def save_sanctuary_session(session_type: str = "Deep Breathing", duration_minutes: int = 5, notes: str = ""):
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    now = datetime.datetime.now()
+    cur.execute("""
+        INSERT INTO sanctuary_sessions (date, time, session_type, duration_minutes, notes)
+        VALUES (?, ?, ?, ?, ?)
+    """, (now.strftime("%Y-%m-%d"), now.strftime("%I:%M %p"), session_type, int(duration_minutes), notes))
+    conn.commit()
+    conn.close()
+
+def get_sanctuary_history(limit: int = 10):
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        df = pd.read_sql_query(f"SELECT * FROM sanctuary_sessions ORDER BY id DESC LIMIT {int(limit)}", conn)
+    except Exception:
+        df = pd.DataFrame()
+    finally:
+        conn.close()
+    return df
