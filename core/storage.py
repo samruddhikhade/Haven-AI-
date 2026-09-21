@@ -2,6 +2,7 @@
 import sqlite3
 import pandas as pd
 import datetime
+import json
 
 DB_PATH = "haven_storage.db"
 
@@ -33,15 +34,25 @@ def init_db():
             journal_note TEXT
         )
     """)
-    
-    # Cravings Table
+    # Full Craving Entries Table
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS cravings_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS cravings_entries (
+            id TEXT PRIMARY KEY,
             date TEXT,
-            craving_category TEXT,
-            recipe_name TEXT,
-            mood TEXT
+            time TEXT,
+            category TEXT,
+            secondary_category TEXT,
+            vibe TEXT,
+            idea TEXT,
+            pantry_matched TEXT,
+            note TEXT
+        )
+    """)
+    # Pantry Settings Table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
         )
     """)
     conn.commit()
@@ -63,7 +74,6 @@ def save_checkin(record: dict):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     today_str = datetime.date.today().strftime("%Y-%m-%d")
-    
     cur.execute("""
         INSERT INTO checkins (
             date, age, systolic_bp, diastolic_bp, weight, heart_rate, blood_sugar,
@@ -94,41 +104,68 @@ def save_checkin(record: dict):
     conn.commit()
     conn.close()
 
-def save_craving_log(category: str, recipe_name: str, mood: str = "Cozy"):
+# --- Functions required by your ui/cravings.py ---
+
+def save_craving_entry(entry: dict):
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
     cur.execute("""
-        INSERT INTO cravings_log (date, craving_category, recipe_name, mood)
-        VALUES (?, ?, ?, ?)
-    """, (today_str, category, recipe_name, mood))
+        INSERT OR REPLACE INTO cravings_entries (
+            id, date, time, category, secondary_category, vibe, idea, pantry_matched, note
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        entry.get("id"),
+        entry.get("date"),
+        entry.get("time"),
+        entry.get("category"),
+        entry.get("secondary_category"),
+        entry.get("vibe"),
+        entry.get("idea"),
+        entry.get("pantry_matched"),
+        entry.get("note")
+    ))
     conn.commit()
     conn.close()
 
-def get_todays_craving():
-    init_db()
-    conn = sqlite3.connect(DB_PATH)
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
-    try:
-        df = pd.read_sql_query("SELECT * FROM cravings_log WHERE date = ? ORDER BY id DESC LIMIT 1", conn, params=(today_str,))
-        if not df.empty:
-            res = df.iloc[0].to_dict()
-        else:
-            res = None
-    except Exception:
-        res = None
-    finally:
-        conn.close()
-    return res
-
-def get_craving_history(limit: int = 10):
+def get_cravings_history():
     init_db()
     conn = sqlite3.connect(DB_PATH)
     try:
-        df = pd.read_sql_query(f"SELECT * FROM cravings_log ORDER BY id DESC LIMIT {int(limit)}", conn)
+        df = pd.read_sql_query("SELECT * FROM cravings_entries ORDER BY date DESC, time DESC", conn)
     except Exception:
         df = pd.DataFrame()
     finally:
         conn.close()
     return df
+
+def delete_craving_entry(entry_id: str):
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM cravings_entries WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
+
+def save_pantry(pantry_list: list):
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("INSERT OR REPLACE INTO user_settings (key, value) VALUES ('pantry', ?)", (json.dumps(pantry_list),))
+    conn.commit()
+    conn.close()
+
+def get_saved_pantry():
+    init_db()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT value FROM user_settings WHERE key = 'pantry'")
+        row = cur.fetchone()
+        if row and row[0]:
+            return json.loads(row[0])
+    except Exception:
+        pass
+    finally:
+        conn.close()
+    return ["Banana", "Makhana", "Curd", "Oats", "Dark Chocolate", "Milk"]
