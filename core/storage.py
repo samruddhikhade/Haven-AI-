@@ -10,7 +10,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     
-    # 1. Checkins Table
+    # 1. Base Checkins Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS checkins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,6 +36,27 @@ def init_db():
         )
     """)
 
+    # --- Auto Migration for Existing DB (Prevents OperationalError) ---
+    cur.execute("PRAGMA table_info(checkins)")
+    existing_cols = [col[1] for col in cur.fetchall()]
+    
+    expected_cols = {
+        "water_glasses": "INTEGER DEFAULT 5",
+        "journal_note": "TEXT DEFAULT ''",
+        "delta_map": "REAL DEFAULT 0.0",
+        "delta_weight": "REAL DEFAULT 0.0",
+        "current_map": "REAL DEFAULT 93.3",
+        "symptoms_count": "INTEGER DEFAULT 0",
+        "mood": "TEXT DEFAULT 'Calm'"
+    }
+    
+    for col_name, col_type in expected_cols.items():
+        if col_name not in existing_cols:
+            try:
+                cur.execute(f"ALTER TABLE checkins ADD COLUMN {col_name} {col_type}")
+            except Exception:
+                pass
+
     # 2. Cravings Entries Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS cravings_entries (
@@ -51,7 +72,7 @@ def init_db():
         )
     """)
 
-    # 3. User Settings Table (Pantry etc.)
+    # 3. User Settings Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_settings (
             key TEXT PRIMARY KEY,
@@ -59,7 +80,7 @@ def init_db():
         )
     """)
 
-    # 4. Sanctuary Sessions Table (Meditation, Breathing, Calm logs)
+    # 4. Sanctuary Sessions Table
     cur.execute("""
         CREATE TABLE IF NOT EXISTS sanctuary_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,9 +95,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ----------------------------------------------------
-# CHECK-IN FUNCTIONS
-# ----------------------------------------------------
 def get_recent_checkins(limit: int = 7):
     init_db()
     conn = sqlite3.connect(DB_PATH)
@@ -93,6 +111,7 @@ def save_checkin(record: dict):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     today_str = datetime.date.today().strftime("%Y-%m-%d")
+    
     cur.execute("""
         INSERT INTO checkins (
             date, age, systolic_bp, diastolic_bp, weight, heart_rate, blood_sugar,
@@ -123,9 +142,6 @@ def save_checkin(record: dict):
     conn.commit()
     conn.close()
 
-# ----------------------------------------------------
-# CRAVING FUNCTIONS
-# ----------------------------------------------------
 def save_craving_entry(entry: dict):
     init_db()
     conn = sqlite3.connect(DB_PATH)
@@ -190,9 +206,6 @@ def get_saved_pantry():
         conn.close()
     return ["Banana", "Makhana", "Curd", "Oats", "Dark Chocolate", "Milk"]
 
-# ----------------------------------------------------
-# SANCTUARY FUNCTIONS (Jo abhi missing the!)
-# ----------------------------------------------------
 def save_sanctuary_session(session_type: str = "Deep Breathing", duration_minutes: int = 5, notes: str = ""):
     init_db()
     conn = sqlite3.connect(DB_PATH)
