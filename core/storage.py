@@ -2,9 +2,17 @@
 import sqlite3
 import pandas as pd
 import datetime
+from zoneinfo import ZoneInfo
 import json
+import os
 
 DB_PATH = "haven_storage.db"
+
+def get_ist_now():
+    try:
+        return datetime.datetime.now(ZoneInfo("Asia/Kolkata"))
+    except Exception:
+        return datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -36,7 +44,7 @@ def init_db():
         )
     """)
 
-    # --- Auto Migration for Existing DB (Prevents OperationalError) ---
+    # Auto Migration for Checkins Table
     cur.execute("PRAGMA table_info(checkins)")
     existing_cols = [col[1] for col in cur.fetchall()]
     
@@ -110,7 +118,7 @@ def save_checkin(record: dict):
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    today_str = get_ist_now().strftime("%Y-%m-%d")
     
     cur.execute("""
         INSERT INTO checkins (
@@ -133,7 +141,7 @@ def save_checkin(record: dict):
         float(record.get("current_map", 93.3)),
         float(record.get("delta_map", 0.0)),
         float(record.get("delta_weight", 0.0)),
-        str(record.get("risk_tier", "Gentle & Steady")),
+        str(record.get("risk_tier", "Lower-Risk Pattern")),
         float(record.get("risk_percentage", 15.0)),
         str(record.get("mood", "Calm")),
         int(record.get("water_glasses", 5)),
@@ -206,15 +214,52 @@ def get_saved_pantry():
         conn.close()
     return ["Banana", "Makhana", "Curd", "Oats", "Dark Chocolate", "Milk"]
 
-def save_sanctuary_session(session_type: str = "Deep Breathing", duration_minutes: int = 5, notes: str = ""):
+def save_sanctuary_session(session_type="Deep Breathing", duration_minutes=5, notes=""):
+    """
+    Safely supports both dictionary input from ui/sanctuary.py and positional args.
+    """
     init_db()
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    now = datetime.datetime.now()
+    now = get_ist_now()
+
+    if isinstance(session_type, dict):
+        d = session_type
+        date_str = str(d.get("date", now.strftime("%Y-%m-%d")))
+        time_str = str(d.get("time", now.strftime("%I:%M %p")))
+        stype = str(d.get("activity_type", d.get("session_type", "Sanctuary Rest")))
+        
+        # duration handling safely
+        dur = d.get("duration_min", d.get("duration_minutes", duration_minutes))
+        try:
+            dur = int(dur)
+        except Exception:
+            dur = 3
+
+        # extract notes safely
+        sound = d.get("sound_used", "")
+        feedback = d.get("feedback", "")
+        nt = str(d.get("notes", ""))
+        if not nt:
+            parts = []
+            if sound: parts.append(f"Sound: {sound}")
+            if feedback: parts.append(f"Mood: {feedback}")
+            nt = " | ".join(parts)
+    else:
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%I:%M %p")
+        stype = str(session_type)
+        try:
+            dur = int(duration_minutes)
+        except Exception:
+            dur = 5
+        nt = str(notes)
+
     cur.execute("""
         INSERT INTO sanctuary_sessions (date, time, session_type, duration_minutes, notes)
         VALUES (?, ?, ?, ?, ?)
-    """, (now.strftime("%Y-%m-%d"), now.strftime("%I:%M %p"), session_type, int(duration_minutes), notes))
+    """, (date_str, time_str, stype, dur, nt))
+    
     conn.commit()
     conn.close()
 

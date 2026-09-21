@@ -3,6 +3,16 @@ import datetime
 import uuid
 import streamlit as st
 import pandas as pd
+from zoneinfo import ZoneInfo
+import datetime
+
+def get_current_ist_time_str():
+    try:
+        now_ist = datetime.datetime.now(ZoneInfo("Asia/Kolkata"))
+    except Exception:
+        # Fallback if zoneinfo tzdata is missing
+        now_ist = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
+    return now_ist.strftime("%Y-%m-%d • %I:%M %p")
 from core.storage import (
     get_cravings_history, save_craving_entry, delete_craving_entry,
     get_saved_pantry, save_pantry

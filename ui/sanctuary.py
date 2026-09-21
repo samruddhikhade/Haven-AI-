@@ -196,7 +196,11 @@ def render_sanctuary_tab():
                         "sound_used": "None",
                         "feedback": fb
                     }
-                    save_sanctuary_session(entry)
+                    save_sanctuary_session(
+    session_type=str(entry.get("activity_type", "Sanctuary Rest")),
+    duration_minutes=int(entry.get("duration_min", 3)),
+    notes=f"Sound: {entry.get('sound_used', '')} | Mood: {entry.get('feedback', '')}"
+)
                     st.session_state.session_completed = False
                     st.session_state.sanctuary_mode = "home"
                     st.rerun()
